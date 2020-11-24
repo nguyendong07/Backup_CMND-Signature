@@ -66,78 +66,42 @@ def non_max_suppression_fast(boxes, labels, overlapThresh):
 
     return final_boxes, final_labels
 
-# final_boxes, final_labels = non_max_suppression_fast(boxes.numpy(), labels, 0.8)
-#find centerpoint
-# def get_center_point(box):
-#     xmin, ymin, xmax, ymax = box
-#     return (xmin + xmax) // 2, (ymin + ymax) // 2
-# final_points = list(map(get_center_point, final_boxes))
-# label_boxes = dict(zip(final_labels, final_points))
-# print(final_labels)
-# print(final_boxes)
-#
-# for i, box in enumerate(final_boxes):
-#     box = list(map(int, box))
-#     x_min, y_min, x_max, y_max = box
-#     x_c = int((x_min+x_max)/2)
-#     y_c = int((y_max+y_min)/2)
-#     print(x_min, y_min, x_max, y_max)
-#     print(x_c, y_c)
-#     cv2.circle(image, (x_c,y_c), 20, (255, 0, 0), -1)
-#     cv2.rectangle(image,(x_min,y_min),(x_max,y_max),(0,255,0),2)
-#     cv2.putText(image, labels[i], (x_min, y_min), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
-# cv2.imshow('img',image)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-# print(image.shape)
 
 def main(path):
   byte = bytes(path.read())
   outputDir = 'image_area/'
   pages = convert_from_bytes(byte)
-  count = 1
+  count = 0
   list1 = []
+  max_score_page = []
+  max_boxes = []
   for page in pages: 
     filename = outputDir+str(path)[:str(path).rindex('.')] +'_'+str(count)+'.jpg'
     page.save(filename)
     res = detect(filename)
-    os.remove(filename)
     if res != None :
-      list1.append({"page": count,"data":{
-        "toado_x": res[0] + res[2]/2,
-        "toado_y": res[1] + res[3]/2
-      }})
-      print(list1)
-    count += 1 
-  return list1
-  
-
+      list1.append(res)
+      max_boxes.append(res[0])
+      max_score_page.append(res[1].item())
+      os.remove(filename)
+      count+=1
+      
+  idx = np.argmax(max_score_page)
+  return {
+          "Page":count,
+          "Toa_do_x":int(list1[idx][0][0] + list1[idx][0][2]/2), 
+          "Toa_do_y":int(list1[idx][0][1] + list1[idx][0][3]/2), 
+          "Score":list1[idx][1]
+    }
   
   
 def detect(filename):
  model = torch.load("/home/tandanml/ML/ExtractInfor/detect/abc")
  image = utils.read_image(filename)
  labels, boxes, scores = model.predict(image)
+
  if (len(boxes)==0): 
    return None
- return (boxes[-1])
- #final_boxes, final_labels = non_max_suppression_fast(boxes.numpy(), labels, 0.8)
- #print(final_boxes, final_labels)
- #if final_boxes == []: 
- #return {
- #     "message" : "Khong tim thay vung ky"
- #     }
- #else:
- #   for i, box in enumerate(final_boxes):
- #       box = list(map(int, box))
- #       x_min, y_min, x_max, y_max = box
- #       x_c = int((x_min+x_max)/2)
- #       y_c = int((y_max+y_min)/2)
- #       cv2.circle(image, (x_c, y_c), 20, (255, 0, 0), -1)
-  #      cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-  #      cv2.putText(image, labels[i], (x_min, y_min), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
-  #  return {
-  #          "Vị trí 4 góc":[x_min, y_min, x_max,y_max],
-   #         "ví trí ký:": [x_c, y_c]}
-
-#detect()
+ values, indices = torch.max(scores, 0)
+ print(values,indices)
+ return boxes[indices],values
