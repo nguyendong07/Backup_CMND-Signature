@@ -7,4 +7,9 @@ download model detect CMND : https://drive.google.com/file/d/1PwNB53NXUGnOEqfNuh
 
 put model in project follow path in module file
 
+install cudnn+cuda : 
+sudo dpkg -i libcudnn7_7.6.5.32-1+cuda10.1_amd64.deb
+
+image and image_area folder
+
 install requirements.txt and run it
